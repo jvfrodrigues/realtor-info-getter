@@ -155,7 +155,7 @@ function runGet() {
   console.log("DONE");
 
   function getPhotos(resp: IngaiaResponse) {
-    var dir = `../../../../../../mnt/d/_projects/alr/${resp.property_reference}`;
+    var dir = `${process.env.FOLDER_PATH}/${resp.property_reference}`;
     if (fs.existsSync(dir)) {
       return;
     }
