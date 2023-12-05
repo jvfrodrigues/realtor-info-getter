@@ -3,8 +3,10 @@ package main
 import (
 	"compress/gzip"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"log"
 	"net/http"
 	"os"
@@ -59,13 +61,17 @@ type IngaiaResponseItem struct {
 var TOKEN = ""
 
 func main() {
+	saveFolder := os.Getenv("FOLDER_PATH_AUTO")
+	if saveFolder == "" {
+		log.Panicln("Env var for path to folder not defined")
+	}
 	start := time.Now()
 	args := os.Args
 	if len(args) < 2 {
 		log.Fatal("missing token")
 	}
 	TOKEN = args[1]
-	currentPage := 106
+	currentPage := 0
 	total := 0
 	for {
 		pageList := getPage(currentPage)
@@ -74,6 +80,10 @@ func main() {
 		}
 		for _, hit := range pageList.Hits {
 			dir := filepath.Join(os.Getenv("FOLDER_PATH_AUTO"), hit.PropertyReference)
+			if _, err := os.Stat(dir); !errors.Is(err, fs.ErrNotExist) {
+				continue
+			}
+			fmt.Println("new property")
 			getItemInfoAsync(hit, dir)
 		}
 		if currentPage > total/36 {
@@ -86,7 +96,7 @@ func main() {
 }
 
 func getPage(page int) IngaiaResponse {
-	url := fmt.Sprintf("https://listings.ingaia.com.br/listings?per_page=36&page_num=%d&scope=Agency&status_id=1", page)
+	url := fmt.Sprintf("https://listings.ingaia.com.br/listings?per_page=36&sort_by=register_date&page_num=%d&scope=Agency&status_id=1", page)
 
 	req, _ := http.NewRequest("GET", url, nil)
 
