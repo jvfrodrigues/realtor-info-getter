@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"compress/gzip"
 	"encoding/json"
 	"errors"
@@ -15,6 +16,23 @@ import (
 	"sync"
 	"time"
 )
+
+var BEARER_TOKEN string
+var COOKIES = "showNewMenu=false; SignInNoPlans=12/09/2023 19:43:59; _BEAMER_USER_ID_xcTSKWBK36426=875111a9-a7e7-4547-a241-e94ece7b66e3; _BEAMER_FIRST_VISIT_xcTSKWBK36426=2023-05-14T20:50:07.675Z; _BEAMER_LAST_PUSH_PROMPT_INTERACTION_xcTSKWBK36426=1701793983655; _BEAMER_BOOSTED_ANNOUNCEMENT_DATE_xcTSKWBK36426=2023-11-12T15:20:10.961Z; _BEAMER_DATE_xcTSKWBK36426=2023-10-24T19:27:47.193Z; _BEAMER_LAST_UPDATE_xcTSKWBK36426=1702161844118; __goc_session__=gmuctzfioukjldcbcuguhcatoozvuhgq; ASP.NET_SessionId=s0o51bg1ytlbpvwhvfs5mecs; B=F54C6885340A19F84B3414A75BDEE8C3079EBC1A; GaiaAuthenticationLoginTime=12/09/2023 19:43:59; teste_https=value_teste_https; enterprises_url=https://enterprises.ingaia.com.br; signalr_url=https://chat.ingaia.com.br; chat_api_url=https://api-chat.ingaia.com.br; contacts_api_url=https://contacts-chat.ingaia.com.br; gaiacore_url=https://imob.gaiacore.com.br/; matomo=3; environment=Production; listings_url=https://listings.ingaia.com.br; accounts_url=https://accounts.ingaia.com.br; goals_url=https://imob-goals.ingaia.com.br; leads_url=https://leads.ingaia.com.br; clients_radar_url=https://radar.ingaia.com.br; customers_url=https://customers.ingaia.com.br; customer_search_url=https://customer-search.ingaia.com.br; kernel_url=https://kernel.ingaia.com.br; locations_url=https://locations.ingaia.com.br; integration_rd_url=https://integration-rdstation.ingaia.com.br/; rd_url=https://api.rd.services/auth/dialog?client_id=fe274f90-9def-4a76-a7b3-3edeafdc6e11; pipe_leads_url=https://pipe-leads.ingaia.com.br/; notifications_url=https://api-notifications.ingaia.com.br; notifications_socket_url=wss://notifications.ingaiaimobApiNotificationscom.br; page_dashboard_loan_url=https://credito.valuegaia.com.br; cms_authorize_page=https://sites-cms.kenlo.io/authorize; mf_onboarding_dashboard_loan_url=https://mf-broker-onboardings-z6rnix554q-uc.a.run.app; mf_kenlo_expert_presentation_url=https://mf-kenlo-expert-presentation-z6rnix554q-uc.a.run.app; config_lead_rules_mf_url=https://config-lead-rules.imob.stg.kenlo.io; home_equity_bff=https://us-central1-kenlo-kash.cloudfunctions.net/ms-bff-opportunities-prod-main; gaiacore_token=4dd7f43506c6bcfae512adbad92e3953; accounts_token=eyJhbGciOiJSUzI1NiIsImtpZCI6IjdDRUFBRkRFRDFBODEwRjBCNzVFRjE0OTBBNjNGNTA1MTA2Mzg5MjYiLCJ0eXAiOiJKV1QiLCJ4NXQiOiJmT3F2M3RHb0VQQzNYdkZKQ21QMUJSQmppU1kifQ.eyJuYmYiOjE3MDIxNjE4NDAsImV4cCI6MTcwMjI0ODI0MCwiaXNzIjoiaHR0cDovL2FjY291bnRzLmluZ2FpYS5jb20uYnIiLCJhdWQiOlsiaHR0cDovL2FjY291bnRzLmluZ2FpYS5jb20uYnIvcmVzb3VyY2VzIiwiQVBJIl0sImNsaWVudF9pZCI6InZhbHVlZ2FpYSIsInN1YiI6ImFsZnJlZG9Abm92YWNhc2FyYW8uY29tLmJyIiwiYXV0aF90aW1lIjoxNzAyMTYxODQwLCJpZHAiOiJsb2NhbCIsImlkIjoiMzQwMzc0IiwiaHR0cDovL3NjaGVtYXMubWljcm9zb2Z0LmNvbS93cy8yMDA4LzA2L2lkZW50aXR5L2NsYWltcy9yb2xlIjoiQ29ycmV0b3IiLCJuYW1lIjoiQWxmcmVkbyBMb3VyZW7Dp28gUm9kcmlndWVzIiwicGhvdG8iOiJodHRwczovL2xoMy5nb29nbGV1c2VyY29udGVudC5jb20vSW0xNkNHaW1GNTFZaGRfMlhaOG9hdmFwWHZtcmF0SW1XX08zZG5XZ01ObXJoMXdhVDBCcFc5VHFuZERxQWxVM3ItMHQ2M3kxOVJBaU1JSWF6OXlaMmV5b3NQcTR5cy1LdmxBNkQzUG1xME9QY0ZyWj13MTAyNC1oNzY4IiwiY29tcGFueV9pZCI6IjM3NTA2IiwiY29tcGFueV9uYW1lIjoiTm92YSBDYXNhcsOjbyBJbcOzdmVpcyIsIm9mZmljZV9pZCI6IjYwMjU0IiwidGVhbV9pZCI6IjAiLCJwcm9maWxlX2lkIjoiMyIsIm5ldHdvcmtzIjoiW10iLCJjb250cmFjdF9zbCI6Im5vdmFfY2FzYXJhb19pbW92ZWlzX2x0ZGFtZTAxIiwic2NvcGUiOlsiY2hhdCIsImRhdGFpbW9iIiwiaW50ZWdyYXRpb24iLCJsaXN0aW5ncyJdLCJhbXIiOlsiY3VzdG9tQXV0aGVudGljYXRpb24iXX0.3L6_YXltSvSphuoXuOVqYAbyTTX_RANOWdivlv8fWTqE8kwZm1XdgZGGu06wtpnLKdmrhdBxYm0kTb-7HWktFWMERuD44HWbKuN7_gEaNuwSOmFlCOtSyyNtuIgIe65RDjA9gN71i_cX4Hrzkz9RTXQwH5QVyg_vq1fXx1bR5eHjSF5udW8-c0H8HTqurFAjDrO1_hhwM86m_LhJkMuDHe3SEmcGlJDTVOlmUai2nwDLA2_Izc6h6rdo_5SwFfaTLigvaMIkJeQVwNzafAtBa92K_d5vw8ERFRKAO8j_YAeQhX2jApS1iQ2YHACBHDA6Hy5SZksVr6L7_Bwzyhuy9A; GaiaAuthentication=7E888A0E8A99C02E841EF86DA3B3CD81B9D0583D4571C406CEDFD3DAA97DF12B84E7EA2EB2702515A17E87048D1FDBFFC4C7C688E160044F22CFD628F1483A7CFD682D3CCADE0030AE5AD2EA414581AE20B99FA01F2347C10DF71805EFFE80DB8DB15C8815D939526B54CAB8726CB1C9BB5939A695A9B77016AD71F33562B6B8E7A9CFC648CD33F77D9722FC74EC262179910427604195A63FCA7EC6A67A8E2B10D421CD2E74C18DD998520DA68445FA8E7C5B96EA7DC5345416728A1C78C9CBFC65F25677A134A1C637BE7D772962564AADFBFA19D7B9339856ADEDF0FEEE61B57BC1903FD39BBB07B76AA8C8D7EA3061A802DAFB00AF4E194D53F71DB13E910CFB8689723523A1F00FABDC9F5900DB; GaiaAuthenticationValues=MDkvMTIvMjAyMyAxOTo0NDowMw==; chatWidgetWindowState2159A609ADD04A068939D64D16D9359F=false; GaiaRoteiro=340374; _BEAMER_FILTER_BY_URL_xcTSKWBK36426=true"
+
+func StringPrompt(label string) string {
+	var s string
+	r := bufio.NewReader(os.Stdin)
+	for {
+		fmt.Fprint(os.Stderr, label+" ")
+		s, _ = r.ReadString('\n')
+		if s != "" {
+			break
+		}
+	}
+	fmt.Println(s)
+	return strings.TrimSpace(s)
+}
 
 type IngaiaResponse struct {
 	Hits  []IngaiaResponseItem `json:"hits"`
@@ -58,19 +76,16 @@ type IngaiaResponseItem struct {
 	AreaLabel             string   `json:"area_label"`
 }
 
-var TOKEN = ""
-
 func main() {
+	BEARER_TOKEN = StringPrompt("BEARER TOKEN:")
+	if BEARER_TOKEN == "" {
+		log.Panicln("Bearer cant be nil")
+	}
 	saveFolder := os.Getenv("FOLDER_PATH_AUTO")
 	if saveFolder == "" {
 		log.Panicln("Env var for path to folder not defined")
 	}
 	start := time.Now()
-	args := os.Args
-	if len(args) < 2 {
-		log.Fatal("missing token")
-	}
-	TOKEN = args[1]
 	currentPage := 0
 	total := 0
 	for {
@@ -110,7 +125,7 @@ func getPage(page int) IngaiaResponse {
 	req.Header.Add("Sec-Fetch-Dest", "empty")
 	req.Header.Add("Sec-Fetch-Mode", "cors")
 	req.Header.Add("Sec-Fetch-Site", "cross-site")
-	req.Header.Add("Authorization", "Bearer "+TOKEN)
+	req.Header.Add("Authorization", BEARER_TOKEN)
 	req.Header.Add("Connection", "keep-alive")
 	req.Header.Add("TE", "trailers")
 
@@ -202,13 +217,13 @@ func getInfoAsync(wg *sync.WaitGroup, item IngaiaResponseItem, dir string) {
 	req, _ := http.NewRequest("GET", url, nil)
 
 	req.Header.Add("cookie", "GaiaAuthenticationValues=MjIvMTEvMjAyMyAxNToxNToyMA%3D%3D")
-	req.Header.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/119.0")
+	req.Header.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:120.0) Gecko/20100101 Firefox/120.0")
 	req.Header.Add("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8")
 	req.Header.Add("Accept-Language", "en-US,en;q=0.5")
 	req.Header.Add("Accept-Encoding", "gzip, deflate, br")
 	req.Header.Add("Connection", "keep-alive")
 	req.Header.Add("Referer", "https://imob.valuegaia.com.br/admin/modules-react/")
-	req.Header.Add("Cookie", "showNewMenu=false; SignInNoPlans=11/22/2023 14:05:41; _BEAMER_USER_ID_xcTSKWBK36426=875111a9-a7e7-4547-a241-e94ece7b66e3; _BEAMER_FIRST_VISIT_xcTSKWBK36426=2023-05-14T20:50:07.675Z; _BEAMER_LAST_PUSH_PROMPT_INTERACTION_xcTSKWBK36426=1684097411562; _BEAMER_BOOSTED_ANNOUNCEMENT_DATE_xcTSKWBK36426=2023-11-12T15:20:10.961Z; _BEAMER_DATE_xcTSKWBK36426=2023-10-24T19:27:47.193Z; _BEAMER_LAST_UPDATE_xcTSKWBK36426=1698170367584; __goc_session__=kiozfjdnqbffmarfuexgetsiyldjapgm; ASP.NET_SessionId=nb5sol5xm0vvlvydxdbxbpf2; B=FF4E05D034CABB212673E54C4AA19AB58EC5EA2B; GaiaAuthenticationLoginTime=11/22/2023 14:05:41; teste_https=value_teste_https; enterprises_url=https://enterprises.ingaia.com.br; signalr_url=https://chat.ingaia.com.br; chat_api_url=https://api-chat.ingaia.com.br; contacts_api_url=https://contacts-chat.ingaia.com.br; gaiacore_url=https://imob.gaiacore.com.br/; matomo=3; environment=Production; listings_url=https://listings.ingaia.com.br; accounts_url=https://accounts.ingaia.com.br; goals_url=https://imob-goals.ingaia.com.br; leads_url=https://leads.ingaia.com.br; clients_radar_url=https://radar.ingaia.com.br; customers_url=https://customers.ingaia.com.br; customer_search_url=https://customer-search.ingaia.com.br; kernel_url=https://kernel.ingaia.com.br; locations_url=https://locations.ingaia.com.br; integration_rd_url=https://integration-rdstation.ingaia.com.br/; rd_url=https://api.rd.services/auth/dialog?client_id=fe274f90-9def-4a76-a7b3-3edeafdc6e11; pipe_leads_url=https://pipe-leads.ingaia.com.br/; notifications_url=https://api-notifications.ingaia.com.br; notifications_socket_url=wss://notifications.ingaiaimobApiNotificationscom.br; page_dashboard_loan_url=https://credito.valuegaia.com.br; cms_authorize_page=https://sites-cms.kenlo.io/authorize; mf_onboarding_dashboard_loan_url=https://mf-broker-onboardings-z6rnix554q-uc.a.run.app; mf_kenlo_expert_presentation_url=https://mf-kenlo-expert-presentation-z6rnix554q-uc.a.run.app; config_lead_rules_mf_url=https://config-lead-rules.imob.stg.kenlo.io; home_equity_bff=https://us-central1-kenlo-kash.cloudfunctions.net/ms-bff-opportunities-prod-main; gaiacore_4=052902a8ea5976efa1bad600b7ec1b89; accounts_token="+TOKEN+"; GaiaAuthentication=82DFDD9273AFCCC9D2F18A928A446CB94F59F1D86EED38F7EE1C478BA5E52B8BCFAE0483CC18E16655ED6DCE09F26428E6ADEF090A0484F7FDE0A0E650730F4C167B4E2A6EA69EA8ACB71C9B2249156D3845118AA69AA439F00FF97A9CDAE57C2F52335485A294A4AFF46B77779A9CA86F3DA4D41A68021BB372BD2126BA2580CA629A19D7910344F6DD8C33E872E628E2231C56968018BB387976CEF885C1B065D587B4ACECEFBCDF6C5C71E5823504EF9EA3F12A0FF87103793A70D7F2DE4E66144981BC8B9C45EFCECE3ECF3A47EA72EE559047894D364357DE91DD1B2807D4AA5D7E2870CCCAC7C2C4E2099D510B4101DC4F2CD69ABD7F68AFC87B564BFFEF834E0E13D7FA69B8721D4035986EA9; GaiaAuthenticationValues=MjIvMTEvMjAyMyAxNDowNTo0NA==; GaiaRoteiro=340374; _BEAMER_FILTER_BY_URL_xcTSKWBK36426=true; chatWidgetWindowState2159A609ADD04A068939D64D16D9359F=false")
+	req.Header.Add("Cookie", COOKIES)
 	req.Header.Add("Upgrade-Insecure-Requests", "1")
 	req.Header.Add("Sec-Fetch-Dest", "iframe")
 	req.Header.Add("Sec-Fetch-Mode", "navigate")
@@ -240,6 +255,10 @@ func getInfoAsync(wg *sync.WaitGroup, item IngaiaResponseItem, dir string) {
 		if err != nil {
 			log.Fatal("ERROR ON READ ", err)
 		}
+	}
+
+	if len(body) <= 0 {
+		log.Panicln("Not getting HTML")
 	}
 
 	fileName := fmt.Sprintf("%s/info.html", dir)
