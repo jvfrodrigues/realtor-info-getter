@@ -130,3 +130,4 @@ dist
 .pnp.*
 database.json
 c2s_clients*
+ingaia_listings
