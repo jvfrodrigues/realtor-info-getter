@@ -1,12 +1,17 @@
-## INGAIA INFO GETTER
+## REALTOR INFO GETTER (BUSCA DADOS PARA IMOBILIARIOS)
 
-Pega as informações de consulta de um imóvel do site Ingaia utilizando o token do usuário fornecido e salvando as imagens do imóvel na pasta indicada
+Ferramenta para pegar dados registrados em alguns sites utilizados por corretores de imoveis
 
-## HOW TO
+## AVAILABLE WEBSITES (Sites disponiveis)
+- Ingaia (ingaiaFull)
+- C2S (c2s)
 
-- Criar um arquivo `.env` baseado no arquivo `.env.example` e alterar o PATH para o caminho da pasta que vc desejar
+## HOW TO (Como usar)
 
-- Para rodar basta usar o comando:
+- Clone the project
 
-`npm run get`
-`yarn get`
+- Install dependencies with `go mod download`
+
+- Run with one of the available websites commands:
+
+`go run main.go <cmd>`
