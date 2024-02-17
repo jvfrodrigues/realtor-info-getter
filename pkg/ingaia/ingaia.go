@@ -19,9 +19,11 @@ import (
 	"github.com/jvfrodrigues/realtor-info-getter/pkg/shared"
 )
 
-var BEARER_TOKEN string
-var FOLDER_PATH string
-var COOKIES []*http.Cookie
+var (
+	BEARER_TOKEN string
+	FOLDER_PATH  string
+	COOKIES      []*http.Cookie
+)
 
 type IngaiaResponse struct {
 	Hits  []IngaiaResponseItem `json:"hits"`
@@ -65,16 +67,28 @@ type IngaiaResponseItem struct {
 	AreaLabel             string   `json:"area_label"`
 }
 
-func GetIngaia() {
-	username := shared.StringPrompt("username:")
-	if username == "" {
-		log.Panicln("username cant be nil")
+func GetIngaia(args []string) {
+	username := ""
+	password := ""
+	if len(args) >= 2 {
+		username = args[0]
+		password = args[1]
+		if len(args) > 2 {
+			FOLDER_PATH = args[2]
+		}
+	} else {
+		// authenticate
+		username = shared.StringPrompt("username:")
+		if username == "" {
+			log.Panicln("User cant be nil")
+		}
+		password = shared.StringPrompt("password:")
+		if password == "" {
+			log.Panicln("Password cant be nil")
+		}
+		FOLDER_PATH = shared.StringPrompt("FOLDER PATH (default ./ingaia_listings):")
 	}
-	password := shared.StringPrompt("password:")
-	if password == "" {
-		log.Panicln("password cant be nil")
-	}
-	FOLDER_PATH = shared.StringPrompt("FOLDER PATH (default ./ingaia_listings):")
+
 	if FOLDER_PATH == "" {
 		FOLDER_PATH = "./ingaia_listings"
 	}
@@ -285,7 +299,7 @@ func getInfoAsync(wg *sync.WaitGroup, item IngaiaResponseItem, dir string) {
 	}
 
 	fileName := fmt.Sprintf("%s/info.html", dir)
-	err = os.WriteFile(fileName, body, 0644)
+	err = os.WriteFile(fileName, body, 0o644)
 	if err != nil {
 		log.Fatal("ERROR WRITING TO FILE ", err)
 	}

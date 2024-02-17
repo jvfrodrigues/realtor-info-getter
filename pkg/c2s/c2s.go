@@ -13,22 +13,34 @@ import (
 	"github.com/jvfrodrigues/realtor-info-getter/pkg/shared"
 )
 
-func GetC2S() {
-	FOLDER_PATH := "./c2s_clients"
+func GetC2S(args []string) {
+	DEFAULT_FOLDER_PATH := "./c2s_clients"
+	username := ""
+	password := ""
+	folderPath := DEFAULT_FOLDER_PATH
+	if len(args) >= 2 {
+		username = args[0]
+		password = args[1]
+        if len(args) > 2 {
+    		folderPath = args[2]
+        }
+	} else {
+		// authenticate
+		username = shared.StringPrompt("username:")
+		if username == "" {
+			log.Panicln("User cant be nil")
+		}
+		password = shared.StringPrompt("password:")
+		if password == "" {
+			log.Panicln("Password cant be nil")
+		}
+		folderPath = shared.StringPrompt("save to folder (default ./c2s_clients):")
+	}
 
-	// authenticate
-	username := shared.StringPrompt("username:")
-	if username == "" {
-		log.Panicln("Bearer cant be nil")
+	if folderPath == "" {
+		folderPath = DEFAULT_FOLDER_PATH
 	}
-	password := shared.StringPrompt("password:")
-	if password == "" {
-		log.Panicln("Bearer cant be nil")
-	}
-	folderPath := shared.StringPrompt("save to folder (default ./c2s_clients):")
-	if folderPath != "" {
-		FOLDER_PATH = folderPath
-	}
+
 	if _, err := os.Stat(folderPath); errors.Is(err, fs.ErrNotExist) {
 		os.MkdirAll(folderPath, os.ModePerm)
 	}
@@ -53,7 +65,7 @@ func GetC2S() {
 			if nextPageURL != "" {
 				path := strings.Split(nextPageURL, "/")
 				fmt.Println(path[3])
-				fileName := fmt.Sprintf("%s/%s.html", FOLDER_PATH, path[3])
+				fileName := fmt.Sprintf("%s/%s.html", folderPath, path[3])
 				if _, err := os.Stat(fileName); errors.Is(err, fs.ErrNotExist) {
 					absURL := e.Request.AbsoluteURL(nextPageURL)
 					if absURL == "" {
@@ -89,7 +101,7 @@ func GetC2S() {
 		url := r.Request.URL.String()
 		if strings.Contains(url, "hash") {
 			path := strings.Split(url, "/")
-			fileName := fmt.Sprintf("%s/%s.html", FOLDER_PATH, path[5])
+			fileName := fmt.Sprintf("%s/%s.html", folderPath, path[5])
 			err = os.WriteFile(fileName, r.Body, 0o644)
 			if err != nil {
 				log.Fatal("ERROR WRITING TO FILE ", err)

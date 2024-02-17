@@ -14,7 +14,7 @@ var ingaiaFullCmd = &cobra.Command{
 	Short: "Gets all properties from ingaia",
 	Long:  `Access ingaia and get all properties`,
 	Run: func(cmd *cobra.Command, args []string) {
-		ingaia.GetIngaia()
+		ingaia.GetIngaia(args)
 	},
 }
 

@@ -14,7 +14,7 @@ var c2sCmd = &cobra.Command{
 	Short: "Get leads from c2s",
 	Long:  `Get all leads from c2s`,
 	Run: func(cmd *cobra.Command, args []string) {
-		c2s.GetC2S()
+		c2s.GetC2S(args)
 	},
 }
 
