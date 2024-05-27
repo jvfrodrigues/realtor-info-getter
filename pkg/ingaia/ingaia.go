@@ -65,6 +65,7 @@ type IngaiaResponseItem struct {
 	HasProposal           bool     `json:"has_proposal"`
 	Area                  float64  `json:"area"`
 	AreaLabel             string   `json:"area_label"`
+	Status                string   `json:"status"`
 }
 
 func GetIngaia(args []string) {
